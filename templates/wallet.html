@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Wallet · Fairsplit{% endblock %}
+{% block content %}
+<div class="page-header animate">
+  <div>
+    <div class="page-title">My Wallet </div>
+    <div class="page-subtitle">Your digital money management</div>
+  </div>
+</div>
+
+<div class="grid grid-2 animate delay-1" style="margin-bottom:24px">
+  <!-- Wallet Card -->
+  <div style="background:linear-gradient(135deg,#2D6A4F,#52B788);border-radius:24px;padding:32px;color:white;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-40px;right:-40px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,0.08)"></div>
+    <div style="position:absolute;bottom:-60px;right:20px;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,0.05)"></div>
+    <div style="font-size:13px;opacity:0.8;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Available Balance</div>
+    <div style="font-family:'Syne',sans-serif;font-size:48px;font-weight:800;letter-spacing:-2px;margin-bottom:24px">
+      ${{ "%.2f"|format(wallet.balance) }}
+    </div>
+    <div style="font-size:13px;opacity:0.7">Fairsplit Wallet</div>
+  </div>
+
+  <!-- Top Up -->
+  <div class="card" style="align-self:start">
+    <div class="card-title"> Add Money to Wallet</div>
+    <form method="POST" action="{{ url_for('topup_wallet') }}">
+      <div class="form-group">
+        <label class="form-label">Amount ($)</label>
+        <input type="number" name="amount" class="form-control" placeholder="Enter amount" step="0.01" min="1" required>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+        {% for amt in [100, 200, 500, 1000] %}
+        <button type="button" class="btn btn-outline btn-sm" onclick="document.querySelector('[name=amount]').value={{ amt }}">+${{ amt }}</button>
+        {% endfor %}
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%"><i class="fa-solid fa-plus"></i> Top Up Wallet</button>
+    </form>
+    <div style="margin-top:12px;padding:12px;background:var(--primary-pale);border-radius:10px;font-size:12px;color:var(--primary);font-weight:500">
+       This is a simulated wallet for demo purposes. No real money is involved.
+    </div>
+  </div>
+</div>
+
+<!-- Transaction History -->
+<div class="card animate delay-2">
+  <div class="card-title"> Transaction History</div>
+  {% if history %}
+  <table class="table">
+    <thead>
+      <tr><th>Type</th><th>With</th><th>Amount</th><th>Note</th><th>Date</th></tr>
+    </thead>
+    <tbody>
+      {% set uid = session.user_id %}
+      {% for p in history %}
+      {% set is_system = p.from_user is none %}
+      {% set is_sender = p.from_user == uid %}
+      {% set other_id = p.to_user if is_sender else p.from_user %}
+      {% set other = all_users.get(other_id) %}
+      <tr>
+        <td>
+          {% if is_system %}
+            <span class="badge badge-green"> Top-up</span>
+          {% elif is_sender %}
+            <span class="badge badge-red"> Sent</span>
+          {% else %}
+            <span class="badge badge-green"> Received</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if is_system %}
+            <span style="color:var(--text-muted)">Wallet</span>
+          {% elif other %}
+            <div style="display:flex;align-items:center;gap:8px">
+              <div class="avatar" style="background:{{ other.avatar_color or '#4ECDC4' }};width:28px;height:28px;font-size:11px">{{ other.name[0].upper() }}</div>
+              {{ other.name }}
+            </div>
+          {% else %}—{% endif %}
+        </td>
+        <td>
+          <strong style="color:{{ 'var(--primary)' if not is_sender or is_system else 'var(--danger)' }}">
+            {{ '+' if not is_sender or is_system else '-' }}${{ "%.2f"|format(p.amount) }}
+          </strong>
+        </td>
+        <td style="color:var(--text-muted);font-size:13px">{{ p.note or '—' }}</td>
+        <td style="color:var(--text-muted);font-size:13px">{{ p.created_at.strftime('%d %b %Y') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">
+    <div class="icon"> </div>
+    <p>No transactions yet. Top up your wallet to get started!</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

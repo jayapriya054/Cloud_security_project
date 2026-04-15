@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · Fairsplit{% endblock %}
+{% block content %}
+<div class="page-header animate">
+  <div>
+    <div class="page-title">Good day, {{ user.name.split()[0] }}</div>
+    <div class="page-subtitle">Here's your financial snapshot</div>
+  </div>
+  <a href="{{ url_for('add_expense') }}" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Expense</a>
+</div>
+
+<!-- STAT CARDS -->
+<div class="grid grid-4 animate delay-1" style="margin-bottom:24px">
+  <div class="stat-card green">
+    <div class="stat-label">Total Owed to You</div>
+    <div class="stat-value green">${{ "%.2f"|format(total_owed) }}</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Others owe you</div>
+  </div>
+  <div class="stat-card red">
+    <div class="stat-label">You Owe Others</div>
+    <div class="stat-value red">${{ "%.2f"|format(total_owe) }}</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Your pending dues</div>
+  </div>
+  <div class="stat-card orange">
+    <div class="stat-label">Net Balance</div>
+    {% set net = total_owed - total_owe %}
+    <div class="stat-value {{ 'green' if net >= 0 else 'red' }}">${{ "%.2f"|format(net|abs) }}</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px">{{ 'You are ahead' if net >= 0 else 'You owe more' }}</div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-label">Wallet Balance</div>
+    <div class="stat-value green">${{ "%.2f"|format(wallet.balance) }}</div>
+    <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Available funds</div>
+  </div>
+</div>
+
+<!-- CHARTS ROW -->
+<div class="grid grid-2 animate delay-2" style="margin-bottom:24px">
+  <!-- Monthly Spending Chart -->
+  <div class="card">
+    <div class="card-title">Monthly Spending (6 months)</div>
+    {% if monthly %}
+      {% set max_amount = monthly|map(attribute='amount')|max %}
+      <div class="bar-chart">
+        {% for m in monthly %}
+        {% set height = ((m.amount / max_amount * 90)|int) if max_amount > 0 else 4 %}
+        <div class="bar-wrap">
+          <div class="bar" style="height:{{ [height, 4]|max }}px" title="${{ m.amount }}"></div>
+          <div class="bar-label">{{ m.month }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      <div style="text-align:right;font-size:12px;color:var(--text-muted);margin-top:8px">
+        This month: ${{ monthly[-1].amount }}
+      </div>
+    {% else %}
+      <div class="empty-state"><p>No spending data yet</p></div>
+    {% endif %}
+  </div>
+
+  <!-- Category Breakdown -->
+  <div class="card">
+    <div class="card-title">Spending by Category</div>
+    {% if categories %}
+      {% set cat_colors = ['#2D6A4F','#52B788','#F77F00','#FCBF49','#E63946','#4ECDC4','#BB8FCE','#45B7D1'] %}
+      <div class="donut-legend">
+        {% for i, cat in enumerate(categories[:6]) %}
+        {% set color = cat_colors[i % cat_colors|length] %}
+        <div class="legend-item">
+          <div class="legend-dot" style="background:{{ color }}"></div>
+          <div class="legend-name">{{ cat.category }}</div>
+          <div class="legend-val">${{ "%.0f"|format(cat.total) }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state"><p>Add expenses to see breakdown</p></div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- BOTTOM ROW -->
+<div class="grid grid-2 animate delay-3">
+  <!-- Recent Expenses -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="card-title" style="margin:0">Recent Expenses</div>
+      <a href="{{ url_for('expenses') }}" class="btn btn-outline btn-sm">View all</a>
+    </div>
+    {% if recent_expenses %}
+      {% for exp in recent_expenses %}
+      {% set payer = exp.payer %}
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);">
+        <div style="width:40px;height:40px;border-radius:12px;background:var(--primary-pale);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0;color:var(--primary);">
+          {{ exp.category[0] }}
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ exp.description }}</div>
+          <div style="font-size:12px;color:var(--text-muted)">{{ exp.category }} · {{ exp.created_at.strftime('%d %b') }}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-weight:700;color:var(--primary)">${{ "%.0f"|format(exp.amount) }}</div>
+          <div style="font-size:11px;color:var(--text-muted)">{{ exp.members|length }} members</div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state"><p>No expenses yet</p></div>
+    {% endif %}
+  </div>
+
+  <!-- Top Partners + Quick Balances -->
+  <div style="display:flex;flex-direction:column;gap:20px">
+    <div class="card">
+      <div class="card-title">Top Spending Partners</div>
+      {% if partners %}
+        {% for p in partners %}
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <div class="avatar" style="background:{{ p.user.avatar_color or '#4ECDC4' }}">{{ p.user.name[0].upper() }}</div>
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:14px">{{ p.user.name }}</div>
+            <div style="font-size:12px;color:var(--text-muted)">Shared ${{ "%.0f"|format(p.amount) }} together</div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state" style="padding:20px"><p>Add friends to expenses</p></div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div class="card-title" style="margin:0">Quick Balances</div>
+        <a href="{{ url_for('balances') }}" class="btn btn-outline btn-sm">Settle up</a>
+      </div>
+      {% if balances %}
+        {% for uid_b, amount in balances.items() %}
+          {% if amount|abs > 0.01 %}
+          {% set other = all_users.get(uid_b) %}
+          {% if other %}
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <div class="avatar" style="background:{{ other.avatar_color or '#52B788' }};width:32px;height:32px;font-size:12px">{{ other.name[0].upper() }}</div>
+            <div style="flex:1;font-size:14px">{{ other.name }}</div>
+            {% if amount > 0 %}
+              <span class="badge badge-green">owes ${{ "%.0f"|format(amount) }}</span>
+            {% else %}
+              <span class="badge badge-red">you owe ${{ "%.0f"|format(amount|abs) }}</span>
+            {% endif %}
+          </div>
+          {% endif %}
+          {% endif %}
+        {% endfor %}
+      {% else %}
+        <div style="color:var(--text-muted);font-size:14px;text-align:center;padding:12px">All settled up!</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Make enumerate available in Jinja
+</script>
+{% endblock %}

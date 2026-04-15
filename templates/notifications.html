@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Notifications · Fairsplit{% endblock %}
+{% block content %}
+<div class="page-header animate">
+  <div>
+    <div class="page-title">Notifications</div>
+    <div class="page-subtitle">Activity alerts across wallet, splits, and settlements</div>
+  </div>
+  <form method="POST" action="{{ url_for('mark_all_notifications_read') }}">
+    <button class="btn btn-outline"><i class="fa-solid fa-check-double"></i> Mark all read</button>
+  </form>
+</div>
+
+{% set user = get_current_user() %}
+<div class="card animate delay-1" style="margin-bottom:24px">
+  <div class="card-title">Email Alerts</div>
+  {% if not smtp_ready %}
+  <div class="alert alert-error" style="margin-bottom:14px">
+    <i class="fa-solid fa-circle-exclamation"></i>
+    SMTP is not configured. Add <code>SMTP_HOST</code>, <code>SMTP_USER</code>, and <code>SMTP_PASS</code> to your <code>.env</code> file (see <code>.env.example</code>), then restart the app. Messages are addressed to your login email{% if user %}: <strong>{{ user.email }}</strong>{% endif %}.
+  </div>
+  {% else %}
+  <div class="alert alert-success" style="margin-bottom:14px">
+    <i class="fa-solid fa-circle-check"></i>
+    SMTP settings are present in <code>.env</code>{% if user %} (mail addressed to <strong>{{ user.email }}</strong>){% endif %}. That only means the app <em>can try</em> to send mail — it does not prove Gmail accepted login or delivery. Use the button below to verify.
+  </div>
+  {% endif %}
+  <div style="color:var(--text-muted);font-size:13px;margin-bottom:14px">
+    When enabled, Fairsplit will email you for key activity like wallet top-ups, settlements, and when someone adds you to an expense.
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between">
+    <form method="POST" action="{{ url_for('update_notification_settings') }}" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;flex:1">
+      <label style="display:flex;align-items:center;gap:10px;font-weight:600">
+        <input type="checkbox" name="wallet_email_notifications" {% if settings and settings.wallet_email_notifications %}checked{% endif %}>
+        Enable email alerts
+      </label>
+      <button type="submit" class="btn btn-outline">
+        <i class="fa-solid fa-floppy-disk"></i> Save
+      </button>
+    </form>
+    {% if smtp_ready %}
+    <form method="POST" action="{{ url_for('test_notification_email') }}">
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-envelope-circle-check"></i> Send test email</button>
+    </form>
+    {% endif %}
+  </div>
+  <div style="margin-top:12px;padding:12px;background:var(--surface2);border-radius:10px;font-size:12px;color:var(--text-muted);font-weight:500">
+    Mail goes to your login email. Wallet top-ups are always emailed when SMTP works; other alerts use the toggle above. For Gmail, use an App Password in <code>SMTP_PASS</code>.
+  </div>
+</div>
+
+<div class="card animate delay-2">
+  <div class="card-title">Recent Activity</div>
+  {% if notifications %}
+    <table class="table">
+      <thead>
+        <tr><th>Status</th><th>Type</th><th>Message</th><th>Date</th></tr>
+      </thead>
+      <tbody>
+        {% for n in notifications %}
+        <tr style="opacity: {{ '0.75' if n.is_read else '1' }}">
+          <td>
+            {% if n.is_read %}
+              <span class="badge badge-gray">Read</span>
+            {% else %}
+              <span class="badge badge-orange">New</span>
+            {% endif %}
+          </td>
+          <td><span class="badge badge-gray">{{ (n.event_type or 'activity')|capitalize }}</span></td>
+          <td style="font-weight:{{ '500' if n.is_read else '650' }}">{{ n.message }}</td>
+          <td style="color:var(--text-muted);font-size:13px">{{ n.created_at.strftime('%d %b %Y, %I:%M %p') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="empty-state">
+      <div class="icon">🔔</div>
+      <p>No notifications yet.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+

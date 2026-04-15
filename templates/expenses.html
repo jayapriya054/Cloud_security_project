@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Expenses · Fairsplit{% endblock %}
+{% block content %}
+<div class="page-header animate">
+  <div>
+    <div class="page-title">Expenses </div>
+    <div class="page-subtitle">All shared expenses you're part of</div>
+  </div>
+  <a href="{{ url_for('add_expense') }}" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Expense</a>
+</div>
+
+<div class="card animate delay-1">
+  {% if expenses %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th>Category</th>
+        <th>Amount</th>
+        <th>Paid By</th>
+        <th>Your Share</th>
+        <th>Date</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% set cat_icons = {'Food':'🍕','Travel':'✈️','Rent':'🏠','Entertainment':'🎬','Shopping':'🛍️','General':'💼','Utilities':'💡','Health':'🏥'} %}
+      {% for exp in expenses %}
+      {% set payer = exp.payer %}
+      {% set my_share = (exp.splits | selectattr('user_id', 'equalto', uid) | map(attribute='amount') | list | first) | default(0) %}
+      {% set is_settled = uid in (exp.settled | map(attribute='id') | list) %}
+      {% set i_paid = exp.paid_by == uid %}
+      <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:36px;height:36px;border-radius:10px;background:var(--primary-pale);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">
+              {{ cat_icons.get(exp.category) }}
+            </div>
+            <div>
+              <div style="font-weight:600;font-size:14px">{{ exp.description }}</div>
+              <div style="font-size:12px;color:var(--text-muted)">{{ exp.members|length }} people</div>
+            </div>
+          </div>
+        </td>
+        <td><span class="badge badge-gray">{{ exp.category }}</span></td>
+        <td><strong>${{ "%.2f"|format(exp.amount) }}</strong></td>
+        <td>
+          {% if payer %}
+            <div style="display:flex;align-items:center;gap:6px">
+              <div class="avatar" style="background:{{ payer.avatar_color or '#4ECDC4' }};width:28px;height:28px;font-size:11px">{{ payer.name[0].upper() }}</div>
+              <span style="font-size:13px">{{ 'You' if i_paid else payer.name }}</span>
+            </div>
+          {% else %}You{% endif %}
+        </td>
+        <td>
+          {% if i_paid %}
+            <span style="color:var(--primary);font-weight:600">You paid</span>
+          {% else %}
+            <span style="color:var(--danger);font-weight:600">${{ "%.2f"|format(my_share) }}</span>
+          {% endif %}
+        </td>
+        <td style="color:var(--text-muted);font-size:13px">{{ exp.created_at.strftime('%d %b %Y') }}</td>
+        <td>
+          {% if is_settled or i_paid %}
+            <span class="badge badge-green"> Settled</span>
+          {% else %}
+            <span class="badge badge-red">Pending</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if not is_settled and not i_paid %}
+          <button class="btn btn-sm btn-primary settle-btn" data-id="{{ exp.id }}">
+            Settle
+          </button>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">
+    <div class="icon"> </div>
+    <p>No expenses yet. Add your first one!</p>
+    <a href="{{ url_for('add_expense') }}" class="btn btn-primary" style="margin-top:16px">Add Expense</a>
+  </div>
+  {% endif %}
+</div>
+
+<div id="settle-toast" style="display:none;position:fixed;bottom:24px;right:24px;background:var(--primary);color:white;padding:14px 20px;border-radius:12px;font-weight:600;box-shadow:var(--shadow-lg);z-index:999">
+  Expense settled!
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.querySelectorAll('.settle-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const id = btn.dataset.id;
+    const res = await fetch(`/expenses/${id}/settle`, {method:'POST'});
+    if (res.ok) {
+      btn.closest('tr').querySelector('.badge-red').outerHTML = '<span class="badge badge-green"> Settled</span>';
+      btn.remove();
+      const toast = document.getElementById('settle-toast');
+      toast.style.display = 'block';
+      setTimeout(() => toast.style.display = 'none', 3000);
+    }
+  });
+});
+</script>
+{% endblock %}

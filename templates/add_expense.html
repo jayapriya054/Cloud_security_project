@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% block title %}Add Expense · Fairsplit{% endblock %}
+{% block content %}
+<div class="page-header animate">
+  <div>
+    <div class="page-title">Add Expense </div>
+    <div class="page-subtitle">Split a new expense with friends</div>
+  </div>
+  <a href="{{ url_for('expenses') }}" class="btn btn-outline"><i class="fa-solid fa-arrow-left"></i> Back</a>
+</div>
+
+<div style="max-width:640px">
+  <div class="card animate delay-1">
+    <form method="POST" id="expense-form">
+      <div class="grid grid-2">
+        <div class="form-group">
+          <label class="form-label">Description *</label>
+          <input type="text" name="description" class="form-control" placeholder="Pizza night, Uber, Rent..." required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Total Amount ($) *</label>
+          <input type="number" name="amount" id="total-amount" class="form-control" placeholder="0.00" step="0.01" min="0.01" required>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select name="category" class="form-control">
+            <option>Food</option>
+            <option>Travel</option>
+            <option>Rent</option>
+            <option>Entertainment</option>
+            <option>Shopping</option>
+            <option>Utilities</option>
+            <option>Health</option>
+            <option selected>General</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Paid By</label>
+          <select name="paid_by" class="form-control">
+            <option value="{{ uid }}">You</option>
+            {% for u in all_users %}
+            {% if u.id != uid %}
+            <option value="{{ u.id }}">{{ u.name }}</option>
+            {% endif %}
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Split Type</label>
+        <div class="tabs" style="margin-bottom:0">
+          <div class="tab active" data-type="equal" onclick="setSplitType('equal')"> Equal Split</div>
+          <div class="tab" data-type="custom" onclick="setSplitType('custom')"> Custom Split</div>
+        </div>
+        <input type="hidden" name="split_type" id="split-type-input" value="equal">
+      </div>
+
+      <!-- Members -->
+      <div class="form-group">
+        <label class="form-label">Add Members</label>
+        <div style="position:relative">
+          <input type="text" id="user-search" class="form-control" placeholder="Search by name or email..." autocomplete="off">
+          <div id="search-results" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border:1.5px solid var(--border);border-radius:12px;box-shadow:var(--shadow-lg);z-index:50;margin-top:4px;overflow:hidden;"></div>
+        </div>
+        <!-- Always include self -->
+        <input type="hidden" name="members" value="{{ uid }}">
+        <div id="members-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
+          <div class="member-chip" data-id="{{ uid }}" style="display:flex;align-items:center;gap:6px;background:var(--primary);color:white;padding:6px 12px;border-radius:20px;font-size:13px;font-weight:600">
+            <span>You</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Custom splits (shown only in custom mode) -->
+      <div id="custom-splits" style="display:none">
+        <div class="divider"></div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Custom Amounts</label>
+          <div id="custom-inputs"></div>
+          <div id="split-warning" style="font-size:12px;color:var(--danger);margin-top:8px;display:none">
+             Amounts don't add up to total
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+      <div style="display:flex;gap:12px;justify-content:flex-end">
+        <a href="{{ url_for('expenses') }}" class="btn btn-outline">Cancel</a>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Add Expense</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const uid = "{{ uid }}";
+const members = { [uid]: "You" };
+let splitType = "equal";
+
+function setSplitType(type) {
+  splitType = type;
+  document.getElementById('split-type-input').value = type;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.type === type));
+  document.getElementById('custom-splits').style.display = type === 'custom' ? 'block' : 'none';
+  if (type === 'custom') renderCustomInputs();
+}
+
+function renderCustomInputs() {
+  const container = document.getElementById('custom-inputs');
+  container.innerHTML = '';
+  Object.entries(members).forEach(([id, name]) => {
+    const div = document.createElement('div');
+    div.style.cssText = 'display:flex;align-items:center;gap:12px;margin-bottom:10px';
+    div.innerHTML = `<span style="flex:1;font-weight:500;font-size:14px">${name}</span>
+      <input type="number" name="custom_${id}" class="form-control custom-amount" placeholder="0.00" step="0.01" min="0" style="width:150px" oninput="checkSplitTotal()">`;
+    container.appendChild(div);
+  });
+}
+
+function checkSplitTotal() {
+  const total = parseFloat(document.getElementById('total-amount').value) || 0;
+  const customSum = Array.from(document.querySelectorAll('.custom-amount')).reduce((s,i) => s + (parseFloat(i.value)||0), 0);
+  const warn = document.getElementById('split-warning');
+  warn.style.display = Math.abs(total - customSum) > 0.01 ? 'block' : 'none';
+}
+
+function addMember(id, name, color) {
+  if (members[id]) return;
+  members[id] = name;
+  // Add hidden input
+  const inp = document.createElement('input');
+  inp.type = 'hidden'; inp.name = 'members'; inp.value = id; inp.id = `member-inp-${id}`;
+  document.getElementById('expense-form').appendChild(inp);
+  // Add chip
+  const chip = document.createElement('div');
+  chip.className = 'member-chip';
+  chip.dataset.id = id;
+  chip.style.cssText = `display:flex;align-items:center;gap:6px;background:${color};color:white;padding:6px 12px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer`;
+  chip.innerHTML = `<span>${name}</span><span onclick="removeMember('${id}')" style="opacity:0.7;margin-left:2px">✕</span>`;
+  document.getElementById('members-list').appendChild(chip);
+  if (splitType === 'custom') renderCustomInputs();
+}
+
+function removeMember(id) {
+  if (id === uid) return;
+  delete members[id];
+  document.getElementById(`member-inp-${id}`)?.remove();
+  document.querySelector(`.member-chip[data-id="${id}"]`)?.remove();
+  if (splitType === 'custom') renderCustomInputs();
+}
+
+// Search users
+let searchTimeout;
+document.getElementById('user-search').addEventListener('input', function() {
+  clearTimeout(searchTimeout);
+  const q = this.value.trim();
+  const results = document.getElementById('search-results');
+  if (!q) { results.style.display = 'none'; return; }
+  searchTimeout = setTimeout(async () => {
+    const data = await fetch(`/api/users/search?q=${encodeURIComponent(q)}`).then(r => r.json());
+    if (!data.length) { results.style.display = 'none'; return; }
+    results.innerHTML = data.map(u => `
+      <div onclick="addMember('${u.id}','${u.name}','${u.color}')" style="display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;transition:background 0.15s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+        <div style="width:36px;height:36px;border-radius:50%;background:${u.color};display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:14px">${u.name[0].toUpperCase()}</div>
+        <div><div style="font-weight:600;font-size:14px">${u.name}</div><div style="font-size:12px;color:var(--text-muted)">${u.email}</div></div>
+      </div>`).join('');
+    results.style.display = 'block';
+  }, 300);
+});
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#user-search') && !e.target.closest('#search-results'))
+    document.getElementById('search-results').style.display = 'none';
+});
+</script>
+{% endblock %}

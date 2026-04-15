@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fairsplit — Split Expenses the Fair Way</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    :root {
+      --primary: #2D6A4F; --primary-light: #52B788; --primary-pale: #D8F3DC;
+      --accent: #F77F00; --bg: #F8FAF9; --surface: #fff; --border: #E2EBE7;
+      --text: #1A2E25; --text-muted: #6B8F7A;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); }
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 64px; background: white; border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .logo-text { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 24px; }
+    .logo-text span { color: var(--primary); }
+    .nav-links { display: flex; gap: 16px; align-items: center; }
+    .btn-nav {
+      padding: 9px 22px; border-radius: 10px; font-weight: 600; font-size: 14px;
+      text-decoration: none; transition: all 0.2s; border: none; cursor: pointer;
+    }
+    .btn-outline { border: 1.5px solid var(--border); color: var(--text); background: transparent; }
+    .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: #235c43; }
+    /* HERO */
+    .hero {
+      max-width: 900px; margin: 0 auto; padding: 96px 32px 64px;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--primary-pale); color: var(--primary);
+      padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600;
+      margin-bottom: 24px;
+    }
+    .hero h1 {
+      font-family: 'Syne', sans-serif; font-weight: 800;
+      font-size: clamp(40px, 6vw, 72px);
+      line-height: 1.1; letter-spacing: -2px; margin-bottom: 24px;
+    }
+    .hero h1 em { font-style: normal; color: var(--primary); }
+    .hero p { font-size: 18px; color: var(--text-muted); max-width: 520px; margin: 0 auto 40px; line-height: 1.7; }
+    .hero-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn-lg { padding: 14px 32px; border-radius: 12px; font-weight: 600; font-size: 16px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; }
+    .btn-lg.primary { background: var(--primary); color: white; box-shadow: 0 4px 20px rgba(45,106,79,0.3); }
+    .btn-lg.primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(45,106,79,0.4); }
+    .btn-lg.outline { border: 2px solid var(--border); color: var(--text); background: white; }
+    .btn-lg.outline:hover { border-color: var(--primary); color: var(--primary); }
+    /* FEATURES */
+    .section { padding: 64px 32px; max-width: 1100px; margin: 0 auto; }
+    .section-label { text-align: center; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: var(--primary); margin-bottom: 12px; }
+    .section-title { text-align: center; font-family: 'Syne', sans-serif; font-size: 36px; font-weight: 800; margin-bottom: 48px; letter-spacing: -1px; }
+    .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .feat-card {
+      background: white; border-radius: 20px; padding: 28px;
+      border: 1px solid var(--border);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .feat-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(45,106,79,0.1); }
+    .feat-icon {
+      width: 52px; height: 52px; border-radius: 14px; margin-bottom: 16px;
+      display: flex; align-items: center; justify-content: center; font-size: 22px;
+    }
+    .feat-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 18px; margin-bottom: 8px; }
+    .feat-desc { color: var(--text-muted); font-size: 14px; line-height: 1.7; }
+    /* MOCKUP */
+    .mockup-section {
+      background: linear-gradient(135deg, #2D6A4F 0%, #1B4332 100%);
+      border-radius: 28px;
+      padding: 64px 48px;
+      margin: 32px;
+      display: flex;
+      align-items: center;
+      gap: 48px;
+      overflow: hidden;
+      position: relative;
+    }
+    .mockup-section::before {
+      content: '';
+      position: absolute; top: -60px; right: -60px;
+      width: 300px; height: 300px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.05);
+    }
+    .mockup-text { flex: 1; }
+    .mockup-text h2 { font-family: 'Syne', sans-serif; font-size: 36px; font-weight: 800; color: white; margin-bottom: 16px; }
+    .mockup-text p { color: rgba(255,255,255,0.7); font-size: 16px; line-height: 1.7; margin-bottom: 28px; }
+    .mockup-visual {
+      flex: 1;
+      background: white;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .debt-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 0; border-bottom: 1px solid #F0F4F2;
+    }
+    .debt-item:last-child { border-bottom: none; }
+    .debt-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: white; }
+    .debt-arrow { color: #52B788; font-size: 18px; }
+    .debt-amount { font-weight: 700; color: #2D6A4F; }
+    footer {
+      text-align: center; padding: 40px; color: var(--text-muted); font-size: 14px;
+      border-top: 1px solid var(--border);
+    }
+    @media (max-width: 768px) {
+      nav { padding: 16px 20px; }
+      .hero { padding: 64px 20px 40px; }
+      .features { grid-template-columns: 1fr; }
+      .mockup-section { flex-direction: column; margin: 16px; padding: 36px 24px; }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="logo-text">Fair<span>split</span></div>
+    <div class="nav-links">
+      <a href="{{ url_for('login') }}" class="btn-nav btn-outline">Log in</a>
+      <a href="{{ url_for('signup') }}" class="btn-nav btn-primary">Get Started Free</a>
+    </div>
+  </nav>
+
+  <div class="hero">
+    <div class="hero-badge"> 100% Free, No Credit Card Needed</div>
+    <h1>Split Expenses<br>The <em>Fair</em> Way</h1>
+    <p>The smart way to track shared expenses, settle debts, and manage group finances — with AI-powered debt simplification.</p>
+    <div class="hero-btns">
+      <a href="{{ url_for('signup') }}" class="btn-lg primary"><i class="fa-solid fa-rocket"></i> Start for Free</a>
+      <a href="{{ url_for('login') }}" class="btn-lg outline">I have an account</a>
+    </div>
+  </div>
+
+  <section class="section">
+    <div class="section-label">Everything you need</div>
+    <div class="section-title">Built for real people,<br>not spreadsheets</div>
+    <div class="features">
+      <div class="feat-card" style="text-align:center">
+        <div class="feat-icon" style="background:#D8F3DC;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:20px;color:#2D6A4F"><i class="fa-solid fa-receipt"></i></div>
+        <div class="feat-title">Smart Expense Splitting</div>
+        <div class="feat-desc">Split equally or with custom amounts. Track who paid and who owes - in real time.</div>
+      </div>
+      <div class="feat-card" style="text-align:center">
+        <div class="feat-icon" style="background:#FFF3E0;display:flex;align-items:center;justify-content:center;font-size:20px;color:#F77F00;margin:0 auto"><i class="fa-solid fa-code-branch"></i></div>
+        <div class="feat-title">Debt Simplification</div>
+        <div class="feat-desc">Our graph algorithm collapses A→B→C into A→C directly. Fewer payments, less hassle.</div>
+      </div>
+      <div class="feat-card" style="text-align:center">
+        <div class="feat-icon" style="background:#EDE7F6;display:flex;align-items:center;justify-content:center;font-size:20px;color:#7B1FA2;margin:0 auto"><i class="fa-solid fa-chart-line"></i></div>
+        <div class="feat-title">Financial Insights</div>
+        <div class="feat-desc">Monthly trends, category breakdowns, and spending partner analytics — your personal fintech layer.</div>
+      </div>
+      <div class="feat-card" style="text-align:center">
+        <div class="feat-icon" style="background:#E3F2FD;display:flex;align-items:center;justify-content:center;font-size:20px;color:#1565C0;margin:0 auto"><i class="fa-solid fa-wallet"></i></div>
+        <div class="feat-title">Built-in Wallet</div>
+        <div class="feat-desc">Each user gets a digital wallet. Top up, send, receive — a mini banking system inside the app.</div>
+      </div>
+      <div class="feat-card" style="text-align:center">
+        <div class="feat-icon" style="background:#FCE4EC;display:flex;align-items:center;justify-content:center;font-size:20px;color:#C62828;margin:0 auto"><i class="fa-solid fa-bolt"></i></div>
+        <div class="feat-title">Instant Payments</div>
+        <div class="feat-desc">Simulate payments, mark debts as settled, and maintain a full payment history.</div>
+      </div>
+      <div class="feat-card" style="text-align:center">
+        <div class="feat-icon" style="background:#E8F5E9;display:flex;align-items:center;justify-content:center;font-size:20px;color:#2E7D32;margin:0 auto"><i class="fa-solid fa-bell"></i></div>
+        <div class="feat-title">Notifications</div>
+        <div class="feat-desc">Never miss an expense added or payment received with real-time flash notifications.</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="mockup-section">
+    <div class="mockup-text">
+      <h2>Debt simplification that actually works</h2>
+      <p>Instead of a web of IOUs, our algorithm finds the optimal payment graph — so you pay the minimum number of people.</p>
+    </div>
+    <div class="mockup-visual">
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:12px;color:#1A2E25;">Simplified Debts</div>
+      <div class="debt-item">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="debt-avatar" style="background:#FF6B6B">A</div>
+          <span style="font-size:13px;color:#6B8F7A">Arjun</span>
+        </div>
+        <i class="fa-solid fa-arrow-right debt-arrow"></i>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="debt-avatar" style="background:#4ECDC4">C</div>
+          <span style="font-size:13px;color:#6B8F7A">Chirag</span>
+        </div>
+        <span class="debt-amount">$450</span>
+      </div>
+      <div class="debt-item">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="debt-avatar" style="background:#F77F00">B</div>
+          <span style="font-size:13px;color:#6B8F7A">Bhavna</span>
+        </div>
+        <i class="fa-solid fa-arrow-right debt-arrow"></i>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="debt-avatar" style="background:#45B7D1">D</div>
+          <span style="font-size:13px;color:#6B8F7A">Deepak</span>
+        </div>
+        <span class="debt-amount">$320</span>
+      </div>
+      <div style="margin-top:12px;padding:10px;background:#D8F3DC;border-radius:10px;font-size:12px;color:#2D6A4F;font-weight:600;">
+         4 debts simplified to 2 payments
+      </div>
+    </div>
+  </div>
+
+  <footer>Fairsplit is completely free</footer>
+</body>
+</html>

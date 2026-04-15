@@ -1,1 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Balances · Fairsplit{% endblock %}
+{% block content %}
+<div class="page-header animate">
+  <div>
+    <div class="page-title">Balances </div>
+    <div class="page-subtitle">Smart debt simplification powered by graph optimization</div>
+  </div>
+</div>
 
+<!-- Smart Simplified Debts -->
+<div class="card animate delay-1" style="margin-bottom:24px">
+  <div style="margin-bottom:20px">
+    <div class="card-title" style="margin:0">Simplified Debts</div>
+    <div style="font-size:13px;color:var(--text-muted)">Graph-optimized - minimum transactions needed</div>
+  </div>
+
+  {% if simplified %}
+    <div style="display:flex;flex-direction:column;gap:12px">
+      {% for item in simplified %}
+      <div style="display:flex;align-items:center;gap:16px;padding:16px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border)">
+        {% if item.direction == 'owes_me' %}
+          <div class="avatar lg" style="background:{{ item.user.avatar_color or '#4ECDC4' }}">{{ item.user.name[0].upper() }}</div>
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:15px">{{ item.user.name }}</div>
+            <div style="font-size:13px;color:var(--text-muted)">owes you</div>
+          </div>
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:var(--primary)">${{ "%.2f"|format(item.amount) }}</div>
+          <button onclick="openPayModal('{{ item.user_id }}', '{{ item.user.name }}', {{ item.amount }})" class="btn btn-outline btn-sm">Remind</button>
+        {% else %}
+          <div class="avatar lg" style="background:var(--danger-pale);color:var(--danger);font-weight:700;font-size:18px">$</div>
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:15px">You → {{ item.user.name }}</div>
+            <div style="font-size:13px;color:var(--text-muted)">you owe</div>
+          </div>
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:var(--danger)">${{ "%.2f"|format(item.amount) }}</div>
+          <button onclick="openPayModal('{{ item.user_id }}', '{{ item.user.name }}', {{ item.amount }})" class="btn btn-primary btn-sm">Pay Now</button>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <div class="icon"> </div>
+      <p>All settled up! No pending balances.</p>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Raw balances -->
+<div class="card animate delay-2">
+  <div class="card-title"> All Balances</div>
+  {% if balances %}
+  <table class="table">
+    <thead>
+      <tr><th>Person</th><th>Net Balance</th><th>Status</th><th>Action</th></tr>
+    </thead>
+    <tbody>
+      {% for uid_b, amount in balances.items() %}
+      {% if amount|abs > 0.01 %}
+      {% set other = all_users.get(uid_b) %}
+      {% if other %}
+      <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="avatar" style="background:{{ other.avatar_color or '#4ECDC4' }}">{{ other.name[0].upper() }}</div>
+            <div>
+              <div style="font-weight:600;font-size:14px">{{ other.name }}</div>
+              <div style="font-size:12px;color:var(--text-muted)">{{ other.email }}</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <strong style="color:{{ 'var(--primary)' if amount > 0 else 'var(--danger)' }}">
+            ${{ "%.2f"|format(amount|abs) }}
+          </strong>
+        </td>
+        <td>
+          {% if amount > 0 %}
+            <span class="badge badge-green">They owe you</span>
+          {% else %}
+            <span class="badge badge-red">You owe them</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if amount < 0 %}
+          <button onclick="openPayModal('{{ uid_b }}', '{{ other.name }}', {{ amount|abs }})" class="btn btn-sm btn-primary">Pay ${{ "%.0f"|format(amount|abs) }}</button>
+          {% else %}
+          <button onclick="openPayModal('{{ uid_b }}', '{{ other.name }}', 0)" class="btn btn-sm btn-outline">Request</button>
+          {% endif %}
+        </td>
+      </tr>
+      {% endif %}
+      {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state"><div class="icon">⚖️</div><p>No balances to show</p></div>
+  {% endif %}
+</div>
+
+<!-- Payment Modal -->
+<div class="modal-overlay" id="pay-modal">
+  <div class="modal">
+    <div class="modal-title">Send Payment </div>
+    <form method="POST" action="{{ url_for('send_payment') }}">
+      <input type="hidden" name="to_user" id="modal-to-user">
+      <div class="form-group">
+        <label class="form-label">Paying to</label>
+        <input type="text" id="modal-name-display" class="form-control" readonly style="background:var(--surface2)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Amount ($)</label>
+        <input type="number" name="amount" id="modal-amount" class="form-control" step="0.01" min="0.01" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Note</label>
+        <input type="text" name="note" class="form-control" placeholder="Settlement, Pizza money...">
+      </div>
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px">
+        <button type="button" onclick="closeModal()" class="btn btn-outline">Cancel</button>
+        <button type="submit" class="btn btn-primary">Send Payment ✓</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openPayModal(userId, name, amount) {
+  document.getElementById('modal-to-user').value = userId;
+  document.getElementById('modal-name-display').value = name;
+  document.getElementById('modal-amount').value = amount > 0 ? amount.toFixed(2) : '';
+  document.getElementById('pay-modal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('pay-modal').classList.remove('open');
+}
+document.getElementById('pay-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+</script>
+{% endblock %}
